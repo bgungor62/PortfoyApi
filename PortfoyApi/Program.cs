@@ -33,13 +33,13 @@ var jwt = builder.Configuration.GetSection("jwtSetting");
 
 // güvenlik anahtarýný aldýk ve byte dizisine çevirdik
 //neden byte dizisi: çünkü güvenlik anahtarlarý genellikle byte dizisi olarak iþlenir ve bu, þifreleme algoritmalarýnýn gereksinimlerine daha uygun bir formattýr.
-var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]));
+var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!));
 
 
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
     .AddJwtBearer(options =>
     {
@@ -62,7 +62,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddCors(o =>
 {
     o.AddDefaultPolicy(p =>
-    p.WithOrigins("http://localhost:3000", "http://localhost:5173") //sadece bu adresten gelen isteklere izin verdik)
+    p.WithOrigins("http://localhost:3000", "http://localhost:5053", "https://localhost:7116", "http://localhost:5173") //sadece bu adresten gelen isteklere izin verdik)
     .AllowCredentials()//kimlik doðrulama bilgilerine izin verdik
     .AllowAnyMethod()//herhangi bir HTTP metoduna izin verdik
     .AllowAnyHeader()//herhangi bir HTTP baþlýðýna izin verdik
@@ -87,12 +87,19 @@ builder.Services.AddSwaggerGen(x =>
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
         Description = "Bearer {token}",
+        //güvenlik þemasýna referans verdik
+        Reference = new OpenApiReference
+        {
+            Type=ReferenceType.SecurityScheme,
+            Id= "Bearer"
+        }
 
     };
     x.AddSecurityDefinition("Bearer", scheme); //güvenlik tanýmýný ekledik
     x.AddSecurityRequirement(new OpenApiSecurityRequirement { { scheme, Array.Empty<string>() } }); //güvenlik gereksinimini ekledik
 
 });
+builder.Services.AddControllers();
 
 var app = builder.Build();
 

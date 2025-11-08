@@ -44,8 +44,8 @@ namespace PortfoyApi.Controllers
                 return Unauthorized(new { message = "Geçersiz e-posta veya parola." });
             }
 
-            var createdToken = GenerateToken(user);
-            return Ok(new { createdToken });
+            var token = GenerateToken(user);
+            return Ok(new { token });
         }
 
         [HttpPost("register")]
@@ -71,8 +71,8 @@ namespace PortfoyApi.Controllers
                 return BadRequest(new { errors = result.Errors.Select(e => e.Description) });//kullanıcı oluşturulamazsa hata döner 400
             }
 
-            var createdToken = GenerateToken(user);//işlem başarılı ise token oluşturulur
-            return Ok(new { createdToken });
+            var token = GenerateToken(user);//işlem başarılı ise token oluşturulur
+            return Ok(new { token });
 
         }
 
@@ -82,7 +82,7 @@ namespace PortfoyApi.Controllers
         {
             var jwt = _configuration.GetSection("jwtSetting");//appsettings.json dosyasındaki JwtSettings bölümünü alır.
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"])); //Güvenlik anahtarı oluşturulur.
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!)); //Güvenlik anahtarı oluşturulur.
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);//İmzalama kimlik bilgileri oluşturulur.
 
@@ -91,18 +91,18 @@ namespace PortfoyApi.Controllers
             var claims = new List<Claim>
             {
                 new (JwtRegisteredClaimNames.Sub, user.Id),//Subject: Token'ın konusu, genellikle 
-                new (JwtRegisteredClaimNames.Email,user.Email),//Email: Kullanıcının e-posta adresi
-                new (ClaimTypes.Name, user.UserName ?? ""),//Name: Kullanıcının kullanıcı adı
+                new (JwtRegisteredClaimNames.Email,user.Email ?? ""),//Email: Kullanıcının e-posta adresi
+                new (ClaimTypes.Name, user.UserName ?? user.Email ?? ""),//Name: Kullanıcının kullanıcı adı
                 new(ClaimTypes.NameIdentifier,user.Id)//NameIdentifier: Kullanıcının benzersiz kimliği
             };
 
-            var expires = DateTime.UtcNow.AddMinutes(double.Parse(jwt["ExpiryMinutes"]));//Token'ın geçerlilik süresi ayarlanır.
+            var expires = DateTime.UtcNow.AddMinutes(double.Parse(jwt["ExpiryMinutes"]!));//Token'ın geçerlilik süresi ayarlanır.
 
             var token = new JwtSecurityToken(
                 issuer: jwt["Issuer"],//Token'ı veren
                 audience: jwt["Audience"],//Token'ın hedef kitlesi
-                claims = claims,//token içindeki bilgiler
-                expires = expires,//tokenın geçerlilik süresi
+                claims: claims,//token içindeki bilgiler
+                expires: expires,//tokenın geçerlilik süresi
                 signingCredentials: creds//tokenın imzalama bilgileri
                 );
 
